@@ -49,6 +49,7 @@ def _prepare_mentions(mentions):
             "following_count": m["user"]["friends_count"],
             "created_at": m["user"]["created_at"],
             "profile_image": m["user"]["profile_image_url_https"],
+            "user_id": m["user"]["id_str"],
         }
 
         user_handle = m["user"]["screen_name"]

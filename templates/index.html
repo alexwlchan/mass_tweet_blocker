@@ -4,111 +4,169 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" href="{{ api.static_url('style.css') }}">
 
     <title>Mass Blocker</title>
+
+    <style>
+      img {
+        max-height: 30px;
+        margin-right: 0.6em;
+      }
+
+      th {
+        vertical-align: top;
+      }
+
+      td {
+        width: 100%;
+      }
+
+      input[type='checkbox'] {
+        -webkit-appearance:none;
+        width:  50px;
+        height: 50px;
+        background:white;
+        border-radius:5px;
+        border:2px solid #555;
+        margin-right: 1em;
+      }
+      input[type='checkbox']:checked {
+        background: #E0245E;
+      }
+    </style>
   </head>
   <body>
-    <h1>Mass Blocker</h1>
+    <div class="container">
 
-    <div id="step1">
-      <h2>Step 1</h2>
-      <p>Enter your username:</p>
+      <div class="page-header">
+        <h1>Mass Blocker</h1>
+      </div>
 
-      <input type="text" name="username" placeholder="@username" value="alexwlchan">
-      <button type="submit" onclick="getMentions();">Get mentions</button>
+      <div id="step1">
+        <h2>Step 1</h2>
+        <p>Enter your username:</p>
 
-      <script>
-        function buildBlockList() {
-          inputs = document.getElementsByClassName("checkbox");
+        <form>
+          <div class="form-group">
+            <input class="form-control" type="text" name="username" placeholder="@username" value="alexwlchan" style="width: 250px; display: inline-block;">
+            <button type="submit" onclick="getMentions();" class="btn btn-default">Get mentions</button>
+          </div>
+        </form>
 
-          toBlock = [];
+        <script>
+          // https://stackoverflow.com/a/18197341/1558022
+          function download(filename, text) {
+            var element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
 
-          for (i = 0; i < inputs.length; i++) {
-            if (inputs[i].checked) {
-              toBlock.push(inputs[i].attributes["user"].value);
-            }
+            element.style.display = 'none';
+            document.body.appendChild(element);
+
+            element.click();
+
+            document.body.removeChild(element);
           }
 
-          console.log(toBlock);
-        }
+          function buildBlockList() {
+            inputs = document.getElementsByClassName("block__filter");
 
-        function getMentions() {
-          // document.getElementById("step2").style.display = "block";
+            csvOutput = "screen_name,user_id\n";
 
-          username = document.getElementsByName("username")[0].value;
-          console.log("Fetching mentions for " + username);
-
-          Http = new XMLHttpRequest();
-          Http.open("GET", "/get_mentions?username=" + username);
-          Http.send();
-
-          Http.onreadystatechange = function() {
-            if (this.readyState == 4) {
-              console.log("Request completed with status " + this.status);
-
-              resultElement = document.getElementById("step2__results");
-
-              if (this.status == 200) {
-                mentions = JSON.parse(Http.responseText);
-                resultElement.innerHTML = "";
-
-                resultElement.innerHTML += "<button type=\"submit\" onclick=\"buildBlockList();\">Build a block list</button>"
-
-                Object.keys(mentions).forEach(function(user) {
-                  payload = mentions[user];
-                  console.log(payload)
-
-                  r =
-                    "" +
-                    '<div class="user" user="' + user + '">' +
-                  "<p><strong>" + user + " (" + payload["user"]["name"]  +")</strong></p>" +
-                  "<ul>";
-
-                  for (i = 0; i < payload["tweets"].length; i++) {
-                    r += "<li>" + payload["tweets"][i]["text"] + "</li>"
-                  }
-
-                  r += "</ul>";
-
-                  resultElement.innerHTML += r;
-                })
-
-                // for (i = 0; i < mentions.length; i++) {
-                //   tweet = mentions[i];
-                //   r = "";
-                //   r += "<div class=\"tweet\" user=\"" + tweet.user_handle + "\">";
-                //   r += "<p><input class=\"checkbox\" type=\"checkbox\" user=\"" + tweet.user_handle + "\">";
-                //   r += "@" + tweet.user_handle + " wrote:</p>";
-                //   r += "<p>" + tweet.text + "</p>";
-                //   r += "</div>";
-                //
-                //   resultElement.innerHTML += r;
-                //
-                //   mentions[i];
-                // }
-              } else {
-                resultElement.innerHTML = "<p>Sorry, something went wrong.</p>";
-                resultElement.innerHTML += "<p>This was the error:</p>";
-                resultElement.innerHTML += "<pre><code>" + Http.responseText + "</code></pre>";
+            for (i = 0; i < inputs.length; i++) {
+              if (inputs[i].checked) {
+                csvOutput += inputs[i].attributes["data-screen_name"].textContent + "," +
+                  inputs[i].attributes["data-user_id"].textContent + "\n";
               }
+            }
+
+            currentdate = new Date();
+            download("mass_blocker.csv", csvOutput);
+          }
+
+          function getMentions() {
+            // document.getElementById("step2").style.display = "block";
+
+            username = document.getElementsByName("username")[0].value;
+            console.log("Fetching mentions for " + username);
+
+            Http = new XMLHttpRequest();
+            Http.open("GET", "/get_mentions?username=" + username);
+            Http.send();
+
+            Http.onreadystatechange = function() {
+              if (this.readyState == 4) {
+                console.log("Request completed with status " + this.status);
+
+                resultElement = document.getElementById("step2__results");
+
+                if (this.status == 200) {
+                  mentions = JSON.parse(Http.responseText);
+                  resultElement.innerHTML = "";
+
+                  resultElement.innerHTML += "<p><button type=\"submit\" onclick=\"buildBlockList();\" class=\"btn btn-primary\">Build a block list</button></p>";
+
+                  Object.keys(mentions).forEach(function(user) {
+                    payload = mentions[user];
+
+                    r =
+                      '<table>' +
+                      '<tr><th><input class="block__filter" type="checkbox" data-screen_name="' + user + '" data-user_id="' + payload["user"]["user_id"] + '"></th>' +
+                      '<td><div class="panel panel-default">' +
+                    "<div class=\"panel-heading\"><img src=\"" + payload["user"]["profile_image"] + '"><strong>' + user + " (" + payload["user"]["name"]  +')</strong></div>';
+
+                    r += '<div class="panel-body">';
+                    for (i = 0; i < payload["tweets"].length; i++) {
+                      r += payload["tweets"][i]["text"].replace("\n", "<br>");
+                      if (i < payload["tweets"].length - 1) {
+                        r += "<hr/>";
+                      }
+                    }
+                    r += "</div></div>";
+
+                    r += "</td></tr></table>";
+
+                    resultElement.innerHTML += r;
+                  })
+
+                  // for (i = 0; i < mentions.length; i++) {
+                  //   tweet = mentions[i];
+                  //   r = "";
+                  //   r += "<div class=\"tweet\" user=\"" + tweet.user_handle + "\">";
+                  //   r += "<p><input class=\"checkbox\" type=\"checkbox\" user=\"" + tweet.user_handle + "\">";
+                  //   r += "@" + tweet.user_handle + " wrote:</p>";
+                  //   r += "<p>" + tweet.text + "</p>";
+                  //   r += "</div>";
+                  //
+                  //   resultElement.innerHTML += r;
+                  //
+                  //   mentions[i];
+                  // }
+                } else {
+                  resultElement.innerHTML = "<p>Sorry, something went wrong.</p>";
+                  resultElement.innerHTML += "<p>This was the error:</p>";
+                  resultElement.innerHTML += "<pre><code>" + Http.responseText + "</code></pre>";
+                }
 
 
+              }
             }
           }
-        }
 
-        getMentions()
-        buildBlockList()
-      </script>
-    </div>
+          getMentions()
+          buildBlockList()
+        </script>
+      </div>
 
-    <div id="step2">
-      <h2>Step 2</h2>
-      <p>Select the users you want to block:</p>
+      <div id="step2">
+        <h2>Step 2</h2>
+        <p>Select the users you want to block:</p>
 
-      <div id="step2__results">
-        Fetching your mentions...
+        <div id="step2__results">
+          Fetching your mentions...
+        </div>
       </div>
     </div>
   </body>
