@@ -34,7 +34,7 @@
         }
 
         function getMentions() {
-          document.getElementById("step2").style.display = "block";
+          // document.getElementById("step2").style.display = "block";
 
           username = document.getElementsByName("username")[0].value;
           console.log("Fetching mentions for " + username);
@@ -55,19 +55,38 @@
 
                 resultElement.innerHTML += "<button type=\"submit\" onclick=\"buildBlockList();\">Build a block list</button>"
 
-                for (i = 0; i < mentions.length; i++) {
-                  tweet = mentions[i];
-                  r = "";
-                  r += "<div class=\"tweet\" user=\"" + tweet.user_handle + "\">";
-                  r += "<p><input class=\"checkbox\" type=\"checkbox\" user=\"" + tweet.user_handle + "\">";
-                  r += "@" + tweet.user_handle + " wrote:</p>";
-                  r += "<p>" + tweet.text + "</p>";
-                  r += "</div>";
+                Object.keys(mentions).forEach(function(user) {
+                  payload = mentions[user];
+                  console.log(payload)
+
+                  r =
+                    "" +
+                    '<div class="user" user="' + user + '">' +
+                  "<p><strong>" + user + " (" + payload["user"]["name"]  +")</strong></p>" +
+                  "<ul>";
+
+                  for (i = 0; i < payload["tweets"].length; i++) {
+                    r += "<li>" + payload["tweets"][i]["text"] + "</li>"
+                  }
+
+                  r += "</ul>";
 
                   resultElement.innerHTML += r;
+                })
 
-                  mentions[i];
-                }
+                // for (i = 0; i < mentions.length; i++) {
+                //   tweet = mentions[i];
+                //   r = "";
+                //   r += "<div class=\"tweet\" user=\"" + tweet.user_handle + "\">";
+                //   r += "<p><input class=\"checkbox\" type=\"checkbox\" user=\"" + tweet.user_handle + "\">";
+                //   r += "@" + tweet.user_handle + " wrote:</p>";
+                //   r += "<p>" + tweet.text + "</p>";
+                //   r += "</div>";
+                //
+                //   resultElement.innerHTML += r;
+                //
+                //   mentions[i];
+                // }
               } else {
                 resultElement.innerHTML = "<p>Sorry, something went wrong.</p>";
                 resultElement.innerHTML += "<p>This was the error:</p>";
@@ -78,6 +97,9 @@
             }
           }
         }
+
+        getMentions()
+        buildBlockList()
       </script>
     </div>
 

@@ -2,6 +2,7 @@
 # -*- encoding: utf-8
 
 import json
+import os
 
 import responder
 
@@ -11,7 +12,11 @@ from twitter import TwitterCredentials, TwitterSession
 api = responder.API()
 
 credentials = TwitterCredentials(
-    **json.load(open("/Users/alexwlchan/repos/junkdrawer/backups/twitter/auth2.json")))
+    consumer_api_key=os.environ["CONSUMER_API_KEY"],
+    consumer_api_secret_key=os.environ["CONSUMER_API_SECRET_KEY"],
+    access_token=os.environ["ACCESS_TOKEN"],
+    access_token_secret=os.environ["ACCESS_TOKEN_SECRET"]
+)
 
 sess = TwitterSession(credentials)
 
@@ -22,6 +27,8 @@ def homepage(req, resp):
 
 
 def _prepare_mentions(mentions):
+    all_tweets = {}
+
     for m in mentions:
         text = m["full_text"]
 
@@ -30,17 +37,30 @@ def _prepare_mentions(mentions):
 
         # TODO: Filter out tweets from yourself!
 
-        yield {
+        tweet = {
             "text": text,
-            "user_handle": m["user"]["screen_name"],
-            "user_name": m["user"]["name"],
-            "user_followers_count": m["user"]["followers_count"],
-            "user_following_count": m["user"]["friends_count"],
-            "user_created_at": m["user"]["created_at"],
-            "user_profile_image": m["user"]["profile_image_url_https"],
             "date": m["created_at"],
             "id_str": m["id_str"],
         }
+
+        user = {
+            "name": m["user"]["name"],
+            "followers_count": m["user"]["followers_count"],
+            "following_count": m["user"]["friends_count"],
+            "created_at": m["user"]["created_at"],
+            "profile_image": m["user"]["profile_image_url_https"],
+        }
+
+        user_handle = m["user"]["screen_name"]
+        try:
+            all_tweets[user_handle]["tweets"].append(tweet)
+        except KeyError:
+            all_tweets[user_handle] = {
+                "user": user,
+                "tweets": [tweet]
+            }
+
+    return all_tweets
 
 
 @api.route("/get_mentions")
@@ -53,7 +73,10 @@ def get_mentions(req, resp):
         return
 
     mentions = json.load(open("mentions.json"))
-    resp.media = list(_prepare_mentions(mentions))
+
+    by_user_mentions = _prepare_mentions(mentions)
+    del by_user_mentions[username]
+    resp.media = by_user_mentions
 
     # try:
     #     mentions = list(sess.search(f"to:{username}"))
@@ -62,7 +85,7 @@ def get_mentions(req, resp):
     #     print(err)
     #     raise
     #
-    # resp.media = list(mentions)
+    # resp.media = list(_prepare_mentions(mentions))
     # json.dump(mentions, open("mentions.json", "w"))
 
 
