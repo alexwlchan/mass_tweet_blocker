@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="{{ api.static_url('style.css') }}">
+
+    <title>Mass Blocker</title>
+  </head>
+  <body>
+    <h1>Mass Blocker</h1>
+
+    <div id="step1">
+      <h2>Step 1</h2>
+      <p>Enter your username:</p>
+
+      <input type="text" name="username" placeholder="@username" value="alexwlchan">
+      <button type="submit" onclick="getMentions();">Get mentions</button>
+
+      <script>
+        function buildBlockList() {
+          inputs = document.getElementsByClassName("checkbox");
+
+          toBlock = [];
+
+          for (i = 0; i < inputs.length; i++) {
+            if (inputs[i].checked) {
+              toBlock.push(inputs[i].attributes["user"].value);
+            }
+          }
+
+          console.log(toBlock);
+        }
+
+        function getMentions() {
+          document.getElementById("step2").style.display = "block";
+
+          username = document.getElementsByName("username")[0].value;
+          console.log("Fetching mentions for " + username);
+
+          Http = new XMLHttpRequest();
+          Http.open("GET", "/get_mentions?username=" + username);
+          Http.send();
+
+          Http.onreadystatechange = function() {
+            if (this.readyState == 4) {
+              console.log("Request completed with status " + this.status);
+
+              resultElement = document.getElementById("step2__results");
+
+              if (this.status == 200) {
+                mentions = JSON.parse(Http.responseText);
+                resultElement.innerHTML = "";
+
+                resultElement.innerHTML += "<button type=\"submit\" onclick=\"buildBlockList();\">Build a block list</button>"
+
+                for (i = 0; i < mentions.length; i++) {
+                  tweet = mentions[i];
+                  r = "";
+                  r += "<div class=\"tweet\" user=\"" + tweet.user_handle + "\">";
+                  r += "<p><input class=\"checkbox\" type=\"checkbox\" user=\"" + tweet.user_handle + "\">";
+                  r += "@" + tweet.user_handle + " wrote:</p>";
+                  r += "<p>" + tweet.text + "</p>";
+                  r += "</div>";
+
+                  resultElement.innerHTML += r;
+
+                  mentions[i];
+                }
+              } else {
+                resultElement.innerHTML = "<p>Sorry, something went wrong.</p>";
+                resultElement.innerHTML += "<p>This was the error:</p>";
+                resultElement.innerHTML += "<pre><code>" + Http.responseText + "</code></pre>";
+              }
+
+
+            }
+          }
+        }
+      </script>
+    </div>
+
+    <div id="step2">
+      <h2>Step 2</h2>
+      <p>Select the users you want to block:</p>
+
+      <div id="step2__results">
+        Fetching your mentions...
+      </div>
+    </div>
+  </body>
+</html>
